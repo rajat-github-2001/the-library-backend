@@ -6,7 +6,8 @@ export const createBook = async (req, res) => {
 
         const newBook = new Book({
             title,
-            author
+            author,
+            owner: req.user.id
         });
 
         const savedBook = await newBook.save();
@@ -19,9 +20,9 @@ export const createBook = async (req, res) => {
 
 export const getAllBooks = async (req, res) => {
     try {
-        const books = await Book.find();
+        const books = await Book.find().populate('owner', 'name email');
         res.status(200).json({ success: true, count: books.length, data: books });
-    } catch {
+    } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 }
