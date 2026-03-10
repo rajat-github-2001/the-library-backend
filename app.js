@@ -2,15 +2,20 @@ import express from "express";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cors from 'cors';
+import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import bookRoutes from "./routes/bookRoutes.js";
 import userRoutes from './routes/userRoutes.js'
+import errorHandler from './middleware/errorMiddleware.js';
 
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
+app.use(helmet());
+app.use(cors())
 
 // app.use(
 //     mongoSanitize({
@@ -23,7 +28,6 @@ if (process.env.NODE_ENV === "development") {
     console.log("🛠️ Running in Development Mode");
 }
 
-
 mongoose
     .connect(process.env.MONGO_URI)
     .then(() => console.log("🍃 Connected to MongoDB"))
@@ -31,6 +35,8 @@ mongoose
 
 app.use("/api/books", bookRoutes);
 app.use("/api/users", userRoutes);
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

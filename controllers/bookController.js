@@ -1,13 +1,18 @@
+import asyncHandler from '../middleware/asyncHandler.js';
 import Book from '../models/Book.js';
+import { v2 as cloudinary } from 'cloudinary';
 
-export const createBook = async (req, res) => {
+export const createBook = asyncHandler(async (req, res) => {
     try {
         const { title, author } = req.body;
+
+        const imageUrl = req.file ? req.file.path : undefined;
 
         const newBook = new Book({
             title,
             author,
-            owner: req.user.id
+            owner: req.user.id,
+            image: imageUrl
         });
 
         const savedBook = await newBook.save();
@@ -16,59 +21,70 @@ export const createBook = async (req, res) => {
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
-};
+});
 
-export const getAllBooks = async (req, res) => {
-    try {
-        const books = await Book.find().populate('owner', 'name email');
-        res.status(200).json({ success: true, count: books.length, data: books });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+export const getAllBooks = asyncHandler(async (req, res) => {
+    const { author, search, page = 1, limit = 10 } = req.query;
+
+    let query = {};
+
+    if (author) query.author = author;
+
+    if (search) {
+        query.title = { $regex: search, $options: 'i' };
     }
-}
 
-export const getBookById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const book = await Book.findById(id);
+    const skip = (page - 1) * limit;
 
-        if (!book) {
-            return res.status(404).json({ success: false, message: "Book not found" });
-        }
+    const books = await Book.find(query).populate('owner', 'name email').limit(Number(limit)).skip(skip);
 
-        res.status(200).json({ success: true, data: book });
-    } catch (error) {
-        res.status(400).json({ success: false, message: 'Invalid Id format' })
+    const total = await Book.countDocuments(query);
+
+    res.status(200).json({
+        success: true,
+        count: books.length,
+        total,
+        currentPage: Number(page),
+        totalPages: Math.ceil(total / limit),
+        data: books
+    });
+})
+
+export const getBookById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const book = await Book.findById(id);
+
+    if (!book) {
+        return res.status(404).json({ success: false, message: "Book not found" });
     }
-}
 
-export const updateBook = async (req, res) => {
-    try {
-        const { id } = req.params;
+    res.status(200).json({ success: true, data: book });
+});
 
-        const updatedBook = await Book.findByIdAndUpdate(id, req.body, {
-            new: true,
-            runValidators: true
-        });
+export const updateBook = asyncHandler(async (req, res) => {
+    const { id } = req.params;
 
-        if (!updatedBook) {
-            return res.status(404).json({ success: false, message: "Book not found" });
-        }
-        res.status(200).json({ success: true, data: updatedBook });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+    const updatedBook = await Book.findByIdAndUpdate(id, req.body, {
+        new: true,
+        runValidators: true
+    });
+
+    if (!updatedBook) {
+        return res.status(404).json({ success: false, message: "Book not found" });
     }
-}
+    res.status(200).json({ success: true, data: updatedBook });
+});
 
-export const deleteBook = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deletedBook = await Book.findByIdAndDelete(id);
+export const deleteBook = asyncHandler(async (req, res) => {
+    const book = await Book.findById(req.params.id);
 
-        if (!deletedBook) {
-            return res.status(404).json({ success: true, message: "Book deleted successfully" });
-        }
-    } catch (error) {
-        res.status(400).json({ success: false, message: "Invalid ID format" });
+    if (!book) return res.status(404).json({ message: "Book not found" });
+
+    if (book.image && book.image.includes('cloudinary')) {
+        const publicId = book.image.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`book_covers/${publicId}`);
     }
-}
+
+    await book.deleteOne();
+    res.status(200).json({ success: true, message: "Book and image deleted" });
+});
