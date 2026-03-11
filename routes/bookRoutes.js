@@ -1,6 +1,6 @@
 import express from 'express';
-import { createBook, deleteBook, getAllBooks, getBookById, updateBook } from '../controllers/bookController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { createBook, deleteBook, getAllBooks, getAuthorStats, getBookById, updateBook } from '../controllers/bookController.js';
+import { authorize, protect } from '../middleware/authMiddleware.js';
 import { bookRules, validate } from '../middleware/validator.js';
 import { upload } from '../middleware/uploadMiddleware.js';
 
@@ -17,6 +17,7 @@ router.post(
     createBook
 );
 router.patch('/:id', protect, updateBook);
-router.delete('/:id', protect, deleteBook);
+router.delete('/:id', protect, authorize('admin'), deleteBook);
+router.get('/stats/author-stats', protect, getAuthorStats);
 
 export default router
