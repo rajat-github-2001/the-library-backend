@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  # --- OUR NODE API SERVICE ---
+  api:
+    build: .
+    container_name: book-app-live
+    ports:
+      - "5000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://admin:password@db:27017/bookdb?authSource=admin
+    depends_on:
+      - db
+    command: npx nodemon -L server.js
+    networks:
+      - book-network
+
+  # --- OUR MONGODB SERVICE ---
+  db:
+    image: mongo
+    container_name: mongodb-container
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    networks:
+      - book-network
+    # Volumes here ensure your data survives even if you delete the container!
+    volumes:
+      - mongo-data:/data/db
+
+networks:
+  book-network:
+    driver: bridge
+
+volumes:
+  mongo-data:

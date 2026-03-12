@@ -8,6 +8,13 @@ import mongoSanitize from "express-mongo-sanitize";
 import bookRoutes from "./routes/bookRoutes.js";
 import userRoutes from './routes/userRoutes.js'
 import errorHandler from './middleware/errorMiddleware.js';
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: 'Too many requests from this IP, please try again after 15 minutes'
+});
 
 dotenv.config();
 
@@ -33,14 +40,11 @@ mongoose
     .then(() => console.log("🍃 Connected to MongoDB"))
     .catch((err) => console.error("❌ DB Connection Error:", err));
 
+app.use('/api/', limiter);
 app.use("/api/books", bookRoutes);
 app.use("/api/users", userRoutes);
 
 app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => console.log(`🚀 Server running at ${PORT}`));
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -51,3 +55,5 @@ app.use((err, req, res, next) => {
         error: err.message,
     });
 });
+
+export default app
