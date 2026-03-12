@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    container_name: book-api-prod
+    ports:
+      - "80:3000" # Map to port 80 for the real web
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://admin:password@db:27017/bookdb?authSource=admin
+    depends_on:
+      - db
+    restart: always # If it crashes, Docker brings it back up
+
+  db:
+    image: mongo:latest
+    container_name: mongodb-prod
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo-prod-data:/data/db
+    restart: always
+
+volumes:
+  mongo-prod-data:

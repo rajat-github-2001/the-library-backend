@@ -55,3 +55,15 @@ A professional-grade RESTful API built with the MERN stack (Node.js, Express, Mo
 | DELETE | `/api/books/:id` | Delete book & cloud image (Owner only) |
 
 ---
+
+<!-- docker -->
+
+If you update your code:
+
+1.  Rebuild (docker build).
+
+2.  Re-tag (usually v2, v3, etc.).
+
+3.  Push (docker push).
+
+4.  Update Render to the new tag.
