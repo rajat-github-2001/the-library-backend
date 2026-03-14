@@ -1,0 +1,60 @@
+==================================================
+KUBERNETES / KIND PROJECT CHEAT SHEET
+==================================================
+
+1. STARTUP SEQUENCE (Run in order)
+--------------------------------------------------
+kind create cluster --name desktop
+
+kubectl apply -f mongo-pvc.yaml
+
+kubectl create configmap api-config `
+  --from-literal=PORT="3000" `
+  --from-literal=NODE_ENV="production" `
+  --from-literal=CLOUDINARY_CLOUD_NAME="your_name" `
+  --from-literal=EMAIL_HOST="smtp.mailtrap.io" `
+  --from-literal=EMAIL_PORT="587"
+
+kubectl create secret generic api-secrets `
+  --from-literal=REDIS_URL="your_url" `
+  --from-literal=REDIS_TOKEN="your_token" `
+  --from-literal=JWT_SECRET="your_jwt_secret" `
+  --from-literal=CLOUDINARY_API_KEY="your_key" `
+  --from-literal=CLOUDINARY_API_SECRET="your_secret" `
+  --from-literal=EMAIL_USER="your_user" `
+  --from-literal=EMAIL_PASS="your_pass"
+
+kubectl apply -f mongodb-deployment.yaml
+kubectl apply -f mongodb-service.yaml
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+
+
+2. ACCESS & LOGS (Debugging)
+--------------------------------------------------
+kubectl port-forward svc/library-api-service 5000:80
+kubectl port-forward svc/mongodb-container 27017:27017
+
+kubectl get pods
+kubectl logs -f deployment/library-api-deployment
+kubectl exec -it [POD_NAME] -- printenv
+
+
+3. UPDATING (After code/yaml changes)
+--------------------------------------------------
+kubectl apply -f deployment.yaml
+kubectl rollout restart deployment library-api-deployment
+
+
+4. CLEANUP (Shutdown)
+--------------------------------------------------
+kind delete cluster --name desktop
+docker system prune -a
+
+
+==================================================
+NOTES:
+- Use `kubectl get pods` to find the exact pod name.
+- If 'kind' command fails, delete the cluster 
+  container manually via Docker Desktop.
+==================================================
