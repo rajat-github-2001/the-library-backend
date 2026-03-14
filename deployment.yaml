@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: library-api-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: library-api
+  template:
+    metadata:
+      labels:
+        app: library-api
+    spec:
+      # --- THE MAGIC ADDITION ---
+      initContainers:
+        - name: wait-for-mongo
+          image: busybox:1.28
+          command:
+            [
+              "sh",
+              "-c",
+              "until nslookup mongodb-container; do echo waiting for mongo; sleep 2; done",
+            ]
+      # --------------------------
+      containers:
+        - name: library-api
+          image: rajatdocker2001/the-library-api:v1
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              value: "mongodb://admin:password@mongodb-container:27017/bookdb?authSource=admin"
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secrets
